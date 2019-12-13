@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import '../Search.css';
 import { fetchSearchResults } from '../actions';
@@ -6,24 +6,41 @@ import { fetchSearchResults } from '../actions';
 const Search = () => {
     const [query, changeQuery] = useState('');
     const [page, changePage] = useState(1);
+    const [start, changeStart] = useState(0);
+    const timeoutRef = useRef(null);
+    const INCREMENT = 20;
 
     const results = useSelector(state => state.results);
     const loading = useSelector(state => state.loading);
+    const reqInfo = useSelector(state => state.requestInfo);
     
     const dispatch = useDispatch();
 
-    const search = (query, page) => dispatch(fetchSearchResults(query, page));
 
-    const handleOnInputChange = event => {
-        const newQuery = event.target.value;
-        changeQuery(newQuery);
-        search(newQuery, 1);
-    }
+    // using timeout to dispatch after user stops typing rather than on every input change
+    useEffect(() => {
+        if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
+        if (query) {
+            timeoutRef.current = setTimeout(() => {
+                timeoutRef.current = null;
+                dispatch(fetchSearchResults(query, page));
+            }, 800);
+        }
+    }, [dispatch, query, page]);
 
     const handlePageClick = (type) => {
-        const updatedPageNo = 'prev' === type ? page - 1 : page + 1;
-        changePage(updatedPageNo);
-        dispatch(fetchSearchResults(query, updatedPageNo));
+        const newStart = 'prev' === type ? start - INCREMENT : start + INCREMENT;
+        changeStart(newStart);
+
+        if (newStart >= 100) {
+            changePage(prevPage => prevPage + 1);
+            changeStart(0);
+        }
+
+        if (newStart < 0) {
+            changePage(prevPage => prevPage - 1);
+            changeStart(100-INCREMENT);
+        }
     }
 
     return (
@@ -35,7 +52,7 @@ const Search = () => {
                     value={query}
                     id='search-input'
                     placeholder='Search...'
-                    onChange={handleOnInputChange}
+                    onChange={(e) => changeQuery(e.target.value)}
                 />
                 <i className='fa fa-search search-icon' />
             </label>
@@ -47,19 +64,22 @@ const Search = () => {
                     Next
                 </button>
             </div>
+            { reqInfo && <p>{reqInfo.total_results}</p>}
             {
-                results ?
+                query && results ?
                 <div className='results-container'>
-                    {results.map((result) => {
-                        return (
-                            <a key={result.id} href={result.previewURL} className='result-items'>
-                                <h6 className='image-username'>{result.user}</h6>
-                                <div className='image-wrapper'>
-                                    <img className='image' src={result.previewURL} alt={result.user} />
-                                </div>
-                            </a>
-                        );
-                    })}
+                    {results.filter(result => result.edition_count > 0).slice(start, start + INCREMENT).map((result) => 
+                        <div className='result-items' key={result.key}>
+                            <div className='image-username'>
+                                <p>{result.title}</p>
+                                {result.author_name && <p>By: {result.author_name}</p>}
+                            
+                            </div>
+                            <div className='image-wrapper'>
+                                <img className='image' alt={`${result.title}`} src={`http://covers.openlibrary.org/b/id/${result.cover_i}-M.jpg`} />
+                            </div>
+                        </div>
+                    )}
                 </div> :
                 <div>No Search Results.</div>
             }

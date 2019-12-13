@@ -20,10 +20,12 @@ export const searchSuccess = (data, page) => {
     };
 };
 
+
 export const fetchSearchResults = (query, page) => {
+    // using axios cancel token to prevent an overload of requests
     let call;
 
-    return dispatch => {
+    return async dispatch => {
         if (call) {
             call.cancel();
         }
@@ -31,20 +33,23 @@ export const fetchSearchResults = (query, page) => {
         dispatch(searchStart());
         call = axios.CancelToken.source();
 
-        const searchUrl = `https://pixabay.com/api/?key=14573046-82ba50bd51be4bc29499ebf18&q=${encodeURI(query)}&page=${page}`;
-        return axios(searchUrl, {
-            cancelToken: call.token
-        })
-        .then((res) => {
-            console.log(res);
+        const BASE_URL = `https://openlibrary.org/search.json`;
+
+        const searchUrl = `${BASE_URL}?q=${encodeURI(query)}&page=${page}&mode=ebooks&has_fulltext=true`;
+        console.log(searchUrl);
+        try {
+            const res = await axios(searchUrl, {
+                cancelToken: call.token
+            });
+            // console.log(res);
             dispatch(searchSuccess(res.data, page));
-        })
-        .catch(error => {
+        }
+        catch (error) {
             dispatch(searchFail());
             if (axios.isCancel(error) || error) {
                 console.error(error.message);
             }
-        });
+        }
     };
 }
 
