@@ -1,13 +1,9 @@
+import { getPagesCount } from '../utils';
+
 const initialState = {
     results: null,
     loading: false,
     requestInfo: null
-}
-
-const getPagesCount = (total, denominator) => {
-    const divisible = total % denominator === 0;
-    const valueToBeAdded = divisible ? 0 : 1;
-    return Math.floor(total / denominator) + valueToBeAdded;
 }
 
 const reducer = (state = initialState, action) => {
@@ -24,6 +20,7 @@ const reducer = (state = initialState, action) => {
             };
         case 'SEARCH_SUCCESS':
             const { docs, numFound } = action.data;
+            // openlibrary gets results in chunks of 100, so page contains 100 results
             const total_pages = getPagesCount(numFound, 100);
             const page = action.page;
 
