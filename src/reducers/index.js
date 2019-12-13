@@ -1,7 +1,7 @@
 const initialState = {
     results: null,
     loading: false,
-    requestInfo: {}
+    requestInfo: null
 }
 
 const getPagesCount = (total, denominator) => {

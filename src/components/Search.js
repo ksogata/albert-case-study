@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import '../Search.css';
 import { fetchSearchResults } from '../actions';
+import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
+import Loader from 'react-loader-spinner';
 
 const Search = () => {
     const [query, changeQuery] = useState('');
@@ -43,45 +45,55 @@ const Search = () => {
         }
     }
 
+    const handleInputChange = (e) => {
+        changeQuery(e.target.value);
+        changePage(0);
+    }
+
     return (
-        <div className='container'>
-            <h2 className='heading'>Live Search</h2>
+        <div className='search-container'>
+            <h2 className='heading'>Search for a book</h2>
             <label className='search-label' htmlFor='search-input'>
                 <input
                     type='text'
                     value={query}
                     id='search-input'
                     placeholder='Search...'
-                    onChange={(e) => changeQuery(e.target.value)}
+                    onChange={handleInputChange}
                 />
                 <i className='fa fa-search search-icon' />
             </label>
+            { !!reqInfo && <p>Results Found: {reqInfo.total_results}</p>}
+
             <div className="nav-link-container">
-                <button onClick={() => handlePageClick('prev')}>
+                <button onClick={() => handlePageClick('prev')} className='nav-link'>
                     Prev
                 </button>
-                <button onClick={() => handlePageClick('next')}>
+                <button onClick={() => handlePageClick('next')} className='nav-link'>
                     Next
                 </button>
             </div>
-            { reqInfo && <p>{reqInfo.total_results}</p>}
+            
             {
-                query && results ?
-                <div className='results-container'>
-                    {results.filter(result => result.edition_count > 0).slice(start, start + INCREMENT).map((result) => 
-                        <div className='result-items' key={result.key}>
-                            <div className='image-username'>
-                                <p>{result.title}</p>
-                                {result.author_name && <p>By: {result.author_name}</p>}
-                            
-                            </div>
-                            <div className='image-wrapper'>
-                                <img className='image' alt={`${result.title}`} src={`http://covers.openlibrary.org/b/id/${result.cover_i}-M.jpg`} />
-                            </div>
-                        </div>
-                    )}
-                </div> :
-                <div>No Search Results.</div>
+                !!loading ? 
+                    <Loader type="MutatingDots" color="#00BFFF" height={80} width={80} /> :
+                    !!query && !!results ?
+                        <div className='results-container'>
+                            {console.log(start)}
+                            {results.filter(result => result.edition_count > 0).slice(start, start + INCREMENT).map((result) => 
+                                <div className='result-items' key={result.key}>
+                                    <div className='image-info'>
+                                        <p>{result.title}</p>
+                                        {result.author_name && <p>By: {result.author_name}</p>}
+                                    
+                                    </div>
+                                    <div className='image-wrapper'>
+                                        <img className='image' alt={`${result.title}`} src={`http://covers.openlibrary.org/b/id/${result.cover_i}-M.jpg`} />
+                                    </div>
+                                </div>
+                            )}
+                        </div> :
+                        <div>No Search Results.</div>
             }
         </div>
     )
